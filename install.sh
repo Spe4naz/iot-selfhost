@@ -120,10 +120,11 @@ open_firewall() {
 
 # ----------------------------------------------------------------------
 start_stack() {
+  source .env >/dev/null 2>&1 || true
   log "building images (first run may take a few minutes)..."
   if [ "${NGINX_TLS:-0}" = "1" ]; then
     docker compose --profile certbot up -d --build
-    warn "HTTPS: first certificate is issued in the background; wait a few minutes, then visit https://$DOMAIN"
+    warn "HTTPS: first certificate is issued in the background; wait a few minutes, then visit https://${NGINX_DOMAIN:-localhost}"
   else
     docker compose up -d --build
   fi
