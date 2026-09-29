@@ -1,0 +1,27 @@
+# Local environment / secrets — never commit real values
+.env
+.env.local
+*.pem
+*.key
+*.crt
+
+# Dependencies
+node_modules/
+server/web/node_modules/
+
+# Runtime data (normally a docker named volume)
+data/
+server/data/
+logs/
+*.log
+
+# TLS material (docker volumes; ignore stray copies)
+letsencrypt/
+certbot/etc/
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
