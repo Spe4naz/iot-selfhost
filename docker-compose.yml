@@ -1,0 +1,117 @@
+# IoT Modular System — self-hosted full-stack deployment.
+# Stack: node signaling server + mosquitto (MQTT) + nginx (web/OTA/API proxy) + certbot (TLS).
+#
+# Quick start (HTTP-only for LAN):
+#   cp .env.example .env   # fill NGINX_DOMAIN, REGISTER_TOKEN, MQTT_*
+#   docker compose up -d --build
+#
+# Quick start (HTTPS with automatic Let's Encrypt):
+#   NGINX_TLS=1, CERTBOT_EMAIL set, DNS A-record -> server IP
+#   docker compose --profile certbot up -d --build
+#
+# One-shot installer on a fresh server:
+#   sudo bash install.sh
+#
+# Full guide: see README.md.
+
+name: iot-selfhost
+
+services:
+  server:
+    build: ./server
+    image: iot-selfhost/server:latest
+    restart: unless-stopped
+    environment:
+      PORT: "3100"
+      HOST: "0.0.0.0"
+      REGISTER_TOKEN: "${REGISTER_TOKEN:-}"
+      STALE_MS: "${STALE_MS:-180000}"
+      RATE_LIMIT_WINDOW_MS: "${RATE_LIMIT_WINDOW_MS:-60000}"
+      REGISTRY_FILE: /app/data/devices.json
+      ALERTS_FILE: /app/data/alerts.json
+      RULES_FILE: /app/data/rules.json
+    volumes:
+      - iot-data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3100/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - iot
+
+  mqtt:
+    build: ./mqtt
+    image: iot-selfhost/mqtt:latest
+    restart: unless-stopped
+    environment:
+      MQTT_USER: "${MQTT_USER:-app}"
+      MQTT_PASSWORD: "${MQTT_PASSWORD:-changeme}"
+      MQTT_DEVICE_USER: "${MQTT_DEVICE_USER:-device}"
+      MQTT_DEVICE_PASSWORD: "${MQTT_DEVICE_PASSWORD:-changeme}"
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - mqtt-data:/mosquitto/data
+      - mqtt-log:/mosquitto/log
+      - mqtt-secrets:/mosquitto/secrets
+    networks:
+      - iot
+
+  web:
+    build: ./nginx
+    image: iot-selfhost/web:latest
+    restart: unless-stopped
+    depends_on:
+      - server
+    environment:
+      NGINX_DOMAIN: "${NGINX_DOMAIN:-localhost}"
+      NGINX_TLS: "${NGINX_TLS:-0}"
+      UPSTREAM_SERVER: server
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./site:/usr/share/nginx/html:ro
+      - letsencrypt:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - iot
+
+  certbot:
+    image: certbot/certbot
+    profiles: ["certbot"]
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+    environment:
+      NGINX_DOMAIN: "${NGINX_DOMAIN:-localhost}"
+      CERTBOT_EMAIL: "${CERTBOT_EMAIL:-}"
+    volumes:
+      - letsencrypt:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+      - ./certbot/certbot-entrypoint.sh:/usr/local/bin/iot-certbot:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/iot-certbot"]
+    networks:
+      - iot
+
+volumes:
+  iot-data:
+  mqtt-data:
+  mqtt-log:
+  mqtt-secrets:
+  letsencrypt:
+  certbot-www:
+
+networks:
+  iot:
+    driver: bridge

@@ -1,0 +1,16 @@
+{
+  "name": "iot-signaling-server",
+  "version": "0.3.1",
+  "description": "IoT Modular System - signaling/registry server. Only connects clients and devices; stores no sensor data.",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test:mock": "node test/mock-device.js",
+    "test": "node --test test/registry.test.js test/alerts.test.js test/api.test.js test/limits.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

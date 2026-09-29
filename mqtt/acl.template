@@ -1,0 +1,25 @@
+# IoT Modular System — mosquitto ACL template.
+# Rendered to /mosquitto/secrets/acl by docker-entrypoint.sh; @@APP_USER@@ and
+# @@DEVICE_USER@@ are substituted from MQTT_USER / MQTT_DEVICE_USER.
+#
+# Model matches the app and the firmware:
+#   app    (MQTT_USER)          reads `iot/+/sensors/#`, `iot/+/status`,
+#                               writes commands `iot/+/commands`
+#   device (MQTT_DEVICE_USER)   firmware logs all devices in with one shared
+#                               user ("main" in config.h); each publishes its
+#                               own `iot/<id>/sensors/#`, `iot/<id>/status`
+#                               and subscribes `iot/<id>/commands/#`
+# Anything without a matching rule is denied by default.
+
+user @@APP_USER@@
+topic read iot/+/sensors/#
+topic read iot/+/status
+topic write iot/+/commands
+
+# Shared device user: any device may publish its telemetry (topic carries the
+# device id) and read commands addressed to it. For stricter setups give each
+# device its own user and add per-user `iot/<id>` rows instead.
+user @@DEVICE_USER@@
+topic write iot/+/sensors/#
+topic write iot/+/status
+topic read iot/+/commands/#
