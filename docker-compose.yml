@@ -26,10 +26,23 @@ services:
       HOST: "0.0.0.0"
       REGISTER_TOKEN: "${REGISTER_TOKEN:-}"
       STALE_MS: "${STALE_MS:-180000}"
+      MAX_DEVICES_PER_IP: "${MAX_DEVICES_PER_IP:-3}"
       RATE_LIMIT_WINDOW_MS: "${RATE_LIMIT_WINDOW_MS:-60000}"
+      RATE_LIMIT_REGISTER: "${RATE_LIMIT_REGISTER:-100}"
+      RATE_LIMIT_HEARTBEAT: "${RATE_LIMIT_HEARTBEAT:-100}"
+      RATE_LIMIT_WRITE: "${RATE_LIMIT_WRITE:-100}"
+      RATE_LIMIT_READ: "${RATE_LIMIT_READ:-100}"
       REGISTRY_FILE: /app/data/devices.json
       ALERTS_FILE: /app/data/alerts.json
       RULES_FILE: /app/data/rules.json
+      METRICS_FILE: /app/data/metrics.json
+      STABILITY_FILE: /app/data/stability.json
+      SETTINGS_FILE: /app/data/settings.json
+      METRICS_INTERVAL_MS: "${METRICS_INTERVAL_MS:-10000}"
+      METRICS_FLUSH_SECONDS: "${METRICS_FLUSH_SECONDS:-120}"
+      METRICS_HOURS: "${METRICS_HOURS:-24}"
+      PANEL_PASSWORD: "${PANEL_PASSWORD:-}"
+      PANEL_SESSION_TTL_MS: "${PANEL_SESSION_TTL_MS:-86400000}"
     volumes:
       - iot-data:/app/data
     healthcheck:
